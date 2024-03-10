@@ -1,0 +1,2 @@
+la idea q tengo es que puedas ver modelos 3d adelante tuyo y que puedas interactuar con ellos, con la camara fija
+lo de camara fija ya no va a ser haci, voy a implementar una trackball para que puedas girar y ver todo de todos los angulos

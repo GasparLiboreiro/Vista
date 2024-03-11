@@ -108,6 +108,7 @@ void manage_events(Vista* vista){
                         Vec3 r2 = getPuntoEnTrackball(vista->cam, pixs2, radio).norm(); // punto que toca la esfera en la direccion 2
                         Vec3 eje = r1.mult_vectorial(r2);                               // eje de rotacion perpendicular a los dos puntos
                         double angulo = acos(r1*r2);
+                        //vista->cam.vangular = Quat(cos(-angulo*2), eje.norm()*sin(-angulo*2));
                         vista->cam._girar(eje, -angulo*2);
                     }
 

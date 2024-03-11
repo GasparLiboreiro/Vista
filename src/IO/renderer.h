@@ -6,6 +6,7 @@
 #include "../modelo/entity.h"
 #include "../modelo/matriz.h"
 #include "../modelo/camara.h"
+#include "../modelo/box.h"
 
 
 
@@ -15,6 +16,7 @@ class Renderer{
     private:
         SDL_Window* window;
         SDL_Renderer* canvas;
+        Box screen = Box(ANCHO, ALTO);
         double** z_buffer;
     public:
 
@@ -23,8 +25,10 @@ class Renderer{
             SDL_Init(SDL_INIT_VIDEO);
             SDL_Init(SDL_INIT_EVENTS);
             SDL_CreateWindowAndRenderer(ANCHO, ALTO, 0, &window, &canvas);
-            clear();
+            SDL_SetRenderDrawColor(canvas, 0, 0, 0, 255);
+            SDL_RenderClear(canvas);
             SDL_RenderPresent(canvas);
+            
             
             z_buffer = (double**) malloc(sizeof(double*) * ANCHO);
             for(int i=0; i<ANCHO; i++){
@@ -41,7 +45,7 @@ class Renderer{
 
         void clear()
         {
-            SDL_SetRenderDrawColor(canvas, 0, 0, 0, 255);
+            SDL_SetRenderDrawColor(canvas, 50, 50, 50, 255);
             SDL_RenderClear(canvas);
         }
 
@@ -99,11 +103,13 @@ class Renderer{
                 Vec3 a_i = vertices_image_space[tris_image_space[i].a];
                 Vec3 b_i = vertices_image_space[tris_image_space[i].b];
                 Vec3 c_i = vertices_image_space[tris_image_space[i].c];
+                
                 if(!a_i.nulo && !b_i.nulo && !c_i.nulo){
                     Vec3 a = unitsToPixs(a_i);
                     Vec3 b = unitsToPixs(b_i);
                     Vec3 c = unitsToPixs(c_i);
-
+                    //SDL_SetRenderDrawColor(canvas, rand()%255, rand()%255, rand()%255, 255);
+                    //renderTri(a,b,c,z_buffer);
                     SDL_RenderDrawLineF(canvas, a.x, a.y, b.x, b.y);
                     SDL_RenderDrawLineF(canvas, a.x, a.y, c.x, c.y);
                     SDL_RenderDrawLineF(canvas, b.x, b.y, c.x, c.y);
@@ -140,9 +146,17 @@ class Renderer{
             double ab_h = b.y-a.y;
             double bc_h = c.y-b.y;
 
-            for(int j=0; j<ab_h; j++){// primera mirad del triangulo, a-c / a-b
-
+            for(int j=0; j<ab_h; j++){// primera mitad del triangulo, a-c / a-b
+                Vec3 p1 = a.lerp(c, j/ac_h);
+                Vec3 p2 = a.lerp(b, j/ab_h);
+                rasterizarLinea(p1, p2, z_buffer);
             }
+            for(int j=0; j<bc_h; j++){// primera mitad del triangulo, a-c / a-b
+                Vec3 p1 = a.lerp(c, (j+ab_h)/ac_h);
+                Vec3 p2 = b.lerp(c, j/bc_h);
+                rasterizarLinea(p1, p2, z_buffer);
+            }
+            
 
         }
 
@@ -153,7 +167,9 @@ class Renderer{
                 Vec3 bubb=v1;
                 v1=v2;
                 v2=bubb;
-            }
+            }/*
+            v1.z = 2.0/ANCHO*v1.z-1; //tienen z en pixeles, un quilombo
+            v2.z = 2.0/ANCHO*v2.z-1; //aca lo paso a image space de nuevo*/
             
             double dx = v2.x-v1.x; // distancia en x a atravesar, delta x
 
@@ -161,10 +177,10 @@ class Renderer{
             for(int i=0; i<=dx; i++)
             {
                 p = v1.lerp(v2, i/dx);
-
-                if(p.z > z_buffer[(int)p.x][(int)p.y])
+                if(screen.inBox(p) && p.z > z_buffer[(int)p.x][(int)p.y])
                 {
                     z_buffer[(int)p.x][(int)p.y] = p.z;
+                    SDL_SetRenderDrawColor(canvas, ((p.z+1)/2)*255,((p.z+1)/2)*255,((p.z+1)/2)*255,255); // color pendiente
                     SDL_RenderDrawPoint(canvas, (int)p.x, (int)p.y);
                 }
             }

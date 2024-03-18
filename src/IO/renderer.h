@@ -127,12 +127,10 @@ class Renderer{
         void renderTri(Tri t, Vec3 a, Vec3 b, Vec3 c, double** z_buffer)
         {
             // hay un triangulo en la textura que representa el triangulo que esta en el espacio, y sirve para determinar que colores van en cada pixel, at bt ct son las vertices de este triangulo
-            /*Vec3 at = t.o;
+            Vec3 at = t.o;
             Vec3 bt = t.t1 + t.o; 
-            Vec3 ct = t.t2 + t.o;*/
-            Vec3 at(0,0,0);
-            Vec3 bt(255,0,0); 
-            Vec3 ct(0,255,0);       
+            Vec3 ct = t.t2 + t.o;
+
 
             //quiero tener a b c ordenados de menor a mayor en relacion a Y
             Vec3 bubb;
@@ -239,13 +237,13 @@ class Renderer{
                 if(screen.inBox(p) && p.z > z_buffer[(int)p.x][(int)p.y])
                 {
                     z_buffer[(int)p.x][(int)p.y] = p.z;
-                    SDL_SetRenderDrawColor(canvas, tp.x,tp.y,tp.z,255);
-                    /*if(Box(64,64).inBox(tp.toInt())){
+                    //SDL_SetRenderDrawColor(canvas, ((p.z+1)/2)*255,((p.z+1)/2)*255,((p.z+1)/2)*255,255); // intento fog, flashero
+                    if(Box(64,64).inBox(tp.toInt())){
                         Color color = textura[(int)tp.x][(int)tp.y];
                         SDL_SetRenderDrawColor(canvas, color.r, color.g, color.b, 255);
                     } else {
                         SDL_SetRenderDrawColor(canvas, 255, 255, 255, 255);
-                    }*/
+                    }
                     
                     SDL_RenderDrawPoint(canvas, (int)p.x, (int)p.y);
                 }

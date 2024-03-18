@@ -45,7 +45,14 @@ class Quat{
             return Quat(a/len, b/len, c/len, d/len);
         }
 
+        //retorna la inversa del cuaterion, es decir, 1/q, que a su vez es cambiarle el signo a las partes imaginarias
+        Quat invertir(){
+            return Quat(a, -b, -c, -d);
+        }
 
+        static Quat get_rotation_quaternion(Vec3 eje, double a){
+            return Quat(cos(a), eje.norm()*sin(a));
+        }
 
         static Quat suma(Quat q1, Quat q2){
             return Quat(q1.a + q2.a, q1.b + q2.b, q1.c + q2.c, q1.d + q2.d);

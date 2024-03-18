@@ -8,7 +8,7 @@
 const int NORMAL = 0;
 const int DRAGGING = 1;
 
-const double t_click = 0.15;
+const double t_click = 0.2;
 double press_time = 0; 
 
 int btn_izq_state = NORMAL;
@@ -86,6 +86,7 @@ void manage_events(Vista* vista){
                     if(e.button.button == SDL_BUTTON_LEFT) // click izquierdo
                     {
                         vista->cam.vangular=Quat();
+                        vista->cam._girar(Vec3(0,0,1), 0.2);
                     }
                     if(e.button.button == SDL_BUTTON_RIGHT) // click derecho
                     {
@@ -121,6 +122,33 @@ void manage_events(Vista* vista){
 
             case SDL_MOUSEWHEEL:
                 vista->cam.dist-=e.wheel.preciseY/10;
+                break;
+            
+            case SDL_KEYDOWN:
+                switch (e.key.keysym.sym)
+                {
+                case SDLK_w:
+                    vista->cam.pos.z-=1;
+                    break;
+                case SDLK_a:
+                    vista->cam.pos.x-=1;
+                    break;
+                case SDLK_s:
+                    vista->cam.pos.z+=1;
+                    break;
+                case SDLK_d:
+                    vista->cam.pos.x+=1;
+                    break;
+                case SDLK_LCTRL:
+                    vista->cam.pos.y-=1;
+                    break;
+                case SDLK_SPACE:
+                    vista->cam.pos.y+=1;
+                    break;
+                
+                default:
+                    break;
+                }
                 break;
             
         }

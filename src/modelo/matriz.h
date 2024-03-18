@@ -428,7 +428,23 @@ class Matriz{
                 {        0       ,        0       ,     -1      ,       0     }
             });
         }
+        
+        static Matriz get_rotacion_quaternion(Vec3 eje, double a){
+            Quat rot(cos(a/2), eje*sin(a/2));
+            return get_rotacion_quaternion(rot);
+        }
+        
+/*      // este nesecita que el quat sea hecho: (cos(a/2) , eje*sin(a/2))   . pero yo prefiero que sea (cos(a) , eje*sin(a)), porq es lo mismo y mas legible, la funcion de abajo lo acepta de esa forma 
+        static Matriz get_rotacion_quaternion(Quat q){
+            return Matriz({
+                {1 - 2*(q.c*q.c + q.d*q.d),      2*(q.b*q.c - q.a*q.d),      2*(q.b*q.d + q.a*q.c),  0  },
+                {    2*(q.b*q.c + q.a*q.d),  1 - 2*(q.b*q.b + q.d*q.d),      2*(q.c*q.d - q.a*q.b),  0  },
+                {    2*(q.b*q.d - q.a*q.c),      2*(q.c*q.d + q.a*q.b),  1 - 2*(q.b*q.b + q.c*q.c),  0  },
+                {             0           ,               0           ,               0           ,  1  }
+            });
+        }*/
 
+        
         static Matriz get_rotacion_quaternion(Quat q){
             return Matriz({
                 {2*(q.a*q.a + q.b*q.b)-1,  2*(q.b*q.c - q.a*q.d),    2*(q.b*q.d + q.a*q.c),    0  },

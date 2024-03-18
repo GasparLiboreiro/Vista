@@ -189,4 +189,29 @@ class Vec3{
             std::cout<<this->to_string()<<std::endl;
         }
 
+        Vec3 toInt(){
+            return Vec3((int)x, (int)y, (int)z);
+        }
+
+        Vec3 _toInt(){
+            x=(int)x;
+            y=(int)y;
+            z=(int)z;
+            return *this;
+        }
+
+        /**
+         * Dada una base de dos dimensiones, determinar las coordenadas de un punto en esta
+         * @param t1 primer vector de la base
+         * @param t2 segundo vector de la base
+         * @param p punto a sacar las coordenadas
+         * @returns Vec3 con las coordenadas bidimencionales de p en la base
+        */
+        static Vec3 coordsEnBase2D(Vec3 t1, Vec3 t2, Vec3 p){
+            double divisor = 1/(t1.x*t2.y - t1.y*t2.x);
+            double a = (p.x*t2.y - p.y*t2.x) * divisor;
+            double b = (p.y*t1.x - p.x*t1.y) * divisor;
+            return Vec3(a,b);
+        }
+
 };

@@ -17,8 +17,8 @@ class Entity{
         }
         
         Entity _girar(Vec3 eje, double a){
-            Quat rot(cos(a), eje.norm()*sin(a));
-            direccion=direccion*rot.norm();
+            Quat rot = Quat::get_rotation_quaternion(eje, a);
+            direccion=rot * direccion;
             return *this;
         }
 

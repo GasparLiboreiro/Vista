@@ -29,8 +29,8 @@ class Vista{
 
         Vista():cam(Vec3(0,0,0)), gl([this](){this->paint();},  [this](double dt){this->update(dt);})
         {
-            escena.emplace_back(Entity::getCubo(0.1, Vec3(0,0,0)));
             load_face();
+            escena.emplace_back(Entity::getCubo(0.1, Vec3(0,0,0)));
         }
 
 

@@ -1,25 +1,84 @@
 #pragma once
 #include "vec3.h"
 #include "math.h"
+#include "box.h"
 #include <string>
 #include <vector>
 #include <iostream>
 
+class Color{
+    public:
+        unsigned int r, g, b;
 
+        Color(unsigned int _r=255, unsigned int _g=255, unsigned int _b=255):r(_r),g(_g),b(_b){
+        }
+
+        // color aleatorio
+        static Color rColor(){
+            return Color(rand()%255, rand()%255, rand()%255);
+        }
+};
+
+/** Tri almacena la informacion necesaria para un triangulo, un detalle es que las vertices del triangulo tienen que estar puestas en sentido antihorario, para identificar hacia adonde apunta la normal del triangulo
+ * @param a a la id de la primera vertice del triangulo en el array vertices
+ * @param b la id de la segunda vertice del triangulo en el array vertices
+ * @param c la id de la tercera vertice del triangulo en el array vertices
+ * @param o origen del triangulo en la textura, tambien seria su primer vertice
+ * @param t1 pos de la segunda vertice del triangulo en la textura medido desde el origen
+ * @param t2 pos de la tercera vertice del triangulo en la textura medido desde el origen
+*/
 class Tri{
     public:
+
         int a=0, b=0, c=0;
+        Vec3 o;
+        Vec3 t1, t2;
+        Color textura[64][64]; //<0> aparece deformado cuando se muestra, me frustro
+        Box texturaBox = Box(64,64);
 
-        bool clipped = false;
 
-        Tri(int _a, int _b, int _c):a(_a),b(_b),c(_c){}
+        Tri(int _a, int _b, int _c, Vec3 _t1=Vec3(10,0), Vec3 _t2=Vec3(0,10), Vec3 _o=Vec3()):
+            a(_a),
+            b(_b),
+            c(_c),
+            t1(_t1),
+            t2(_t2),
+            o(_o)
+        {
+            
+            for(int i=0; i<5; i++)
+                textura[i][i]=Color(25*i,0,0);
+            for(int j=2; j<10; j+=2)
+                for(int i=0; i<5; i++)
+                {
+                    textura[i+j][i]=Color(0,25*i,0);
+                    textura[i][i+j]=Color(0,0,25*i);
+                }
+            for(int i=0; i<10; i++)
+                textura[i][0]=Color(0,0,0);
+            for(int i=0; i<10; i++)
+                textura[0][i]=Color(0,0,0);
+        }
 
         Tri add(int amm){
-            return Tri(a+amm, b+amm, c+amm);
+            Tri out = *this; // copio
+            out.a+=amm;
+            out.b+=amm;
+            out.c+=amm;
+            return out;
         }
 
         std::string to_string(){
             return "[ "+std::to_string(a)+" , "+std::to_string(b)+" , "+std::to_string(c)+" ]";
+        }
+
+        Color getColorFromCoords(Vec3 coords){
+            Vec3 p = (t1*coords.x + t2*coords.y) + o;
+            if(texturaBox.inBox( p._toInt() )){
+                return textura[(int)p.x][(int)p.y];
+            } else {
+                return Color();
+            }
         }
 
 };
@@ -57,23 +116,23 @@ class Mesh{
                     for(int k=0; k<2; k++)
                         vertices.push_back(Vec3(tam/2*pow(-1,i), tam/2*pow(-1,j), tam/2*pow(-1,k)));  
 
-            tris.push_back(Tri(0, 1, 2));
+            tris.push_back(Tri(0, 2, 1));
             tris.push_back(Tri(3, 1, 2));
 
             tris.push_back(Tri(1, 3, 5));
-            tris.push_back(Tri(7, 3, 5));
+            tris.push_back(Tri(7, 5, 3));
 
             tris.push_back(Tri(7, 3, 6));
-            tris.push_back(Tri(2, 3, 6));
+            tris.push_back(Tri(2, 6, 3));
 
-            tris.push_back(Tri(2, 4, 6));
-            tris.push_back(Tri(2, 4, 0));
+            tris.push_back(Tri(6, 2, 4));
+            tris.push_back(Tri(0, 4, 2));
             
-            tris.push_back(Tri(1, 4, 0));
-            tris.push_back(Tri(1, 4, 5));
+            tris.push_back(Tri(0, 1, 4));
+            tris.push_back(Tri(5, 4, 1));
             
-            tris.push_back(Tri(6, 4, 5));
-            tris.push_back(Tri(6, 7, 5));
+            tris.push_back(Tri(4, 5, 6));
+            tris.push_back(Tri(7, 6, 5));
 
             return Mesh(vertices, tris);
         }

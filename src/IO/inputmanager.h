@@ -25,6 +25,8 @@ Vec3 getDireccionClickeada(Vec3 px, Camara c){
     Vec3 pu = Renderer::pixsToUnits(px);
     pu.setZ(1);                             // lo paso a image space haciendo que este contra el near plane (z = 1)
 
+    pu.y=-pu.y;
+
     Matriz p_col = Matriz::vec3_a_columna(pu);
     p_col = p_col * (c.np);                 // lo paso a vector columna y lo multiplico por el w que resultaria de hacer la view transofrm
     

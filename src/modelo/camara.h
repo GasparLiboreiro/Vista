@@ -32,6 +32,11 @@ class Camara{
         Matriz getTransformacion(){
             return Matriz::get_traslacion(pos)*Matriz::get_rotacion_quaternion(direccion)*Matriz::get_traslacion(Vec3(0,0,dist));
         }
+
+        Matriz getTransformacionInversa(){
+            return Matriz::get_traslacion(Vec3(0,0,-dist))*Matriz::get_rotacion_quaternion(direccion.opuesto())*Matriz::get_traslacion(pos.opuesto());
+        }
+
         // incluye la transofrmacion de un punto a un punto en camera space antes de la transformacion de camera space a image space
         Matriz getCameraTransform(){
             return Matriz::get_view_transform(fov, np, fp) * getTransformacion().inversa();

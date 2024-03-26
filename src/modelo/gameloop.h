@@ -43,10 +43,11 @@ class GameLoop{
                     std::this_thread::sleep_for(std::chrono::duration<double>(espera));
                     //std::cout<<"delay de "<<espera<<"segundos"<<std::endl;
                 }
-
+                if(espera < 0 && ues < ups_ideal)
+                    std::cout<<std::endl;
                 while(espera < 0 && ues < ups_ideal){// si el sleep time es negativo compensamos creando updates dentro del mismo frame, hasta que sleep time sea positivo o que se abastescan las updates del segundo
                     //update
-                    //std::cout<<"compensando por frame lento!!"<<std::endl;
+                    std::cout<<"l";
                     update(omp_get_wtime() - ult_update);
                     ult_update = omp_get_wtime();
                     ues++;

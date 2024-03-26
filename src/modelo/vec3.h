@@ -68,6 +68,21 @@ class Vec3{
             return mult_escalar(v);
         }
 
+        Vec3 operator/ (double k){
+            return mult_const(1/k);
+        }
+
+        // comparasiones
+        bool operator== (Vec3 b){
+            return (x==b.x) && (y==b.y) && (z==b.z);
+        } 
+
+        bool operator!= (Vec3 b){
+            return !operator==(b);
+        }
+
+
+
         double len(){
             return sqrt(pow(x,2) + pow(y,2) + pow(z,2));
         }

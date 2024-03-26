@@ -434,7 +434,8 @@ class Matriz{
             return get_rotacion_quaternion(rot);
         }
         
-/*      // este nesecita que el quat sea hecho: (cos(a/2) , eje*sin(a/2))   . pero yo prefiero que sea (cos(a) , eje*sin(a)), porq es lo mismo y mas legible, la funcion de abajo lo acepta de esa forma 
+        // este nesecita que el quat sea hecho: (cos(a/2) , eje*sin(a/2))   . pero yo prefiero que sea (cos(a) , eje*sin(a)), porq es lo mismo y mas legible, la funcion de abajo lo acepta de esa forma 
+        // update al final si uso este porq con (cos(a/2) , eje*sin(a/2)) podes hacer q * p * q^-1 y te debuelve p rotado por q sin nesecidad de la matriz
         static Matriz get_rotacion_quaternion(Quat q){
             return Matriz({
                 {1 - 2*(q.c*q.c + q.d*q.d),      2*(q.b*q.c - q.a*q.d),      2*(q.b*q.d + q.a*q.c),  0  },
@@ -442,9 +443,9 @@ class Matriz{
                 {    2*(q.b*q.d - q.a*q.c),      2*(q.c*q.d + q.a*q.b),  1 - 2*(q.b*q.b + q.c*q.c),  0  },
                 {             0           ,               0           ,               0           ,  1  }
             });
-        }*/
+        }
 
-        
+        /*// nesecita que el quat sea (cos(a) , eje*sin(a))
         static Matriz get_rotacion_quaternion(Quat q){
             return Matriz({
                 {2*(q.a*q.a + q.b*q.b)-1,  2*(q.b*q.c - q.a*q.d),    2*(q.b*q.d + q.a*q.c),    0  },
@@ -452,7 +453,7 @@ class Matriz{
                 {2*(q.b*q.d - q.a*q.c),    2*(q.c*q.d + q.a*q.b),    2*(q.a*q.a + q.d*q.d)-1,  0  },
                 {           0         ,               0         ,               0           ,  1  }
             });
-        }
+        }*/
 
         static Matriz vec3_a_columna(Vec3 v){
             return Matriz{

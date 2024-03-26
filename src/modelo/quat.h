@@ -46,13 +46,24 @@ class Quat{
         }
 
         //retorna la inversa del cuaterion, es decir, 1/q, que a su vez es cambiarle el signo a las partes imaginarias
-        Quat invertir(){
+        Quat opuesto(){
             return Quat(a, -b, -c, -d);
         }
 
-        static Quat get_rotation_quaternion(Vec3 eje, double a){
-            return Quat(cos(a), eje.norm()*sin(a));
+
+        Vec3 getDireccion(){
+            Quat p = Quat(0,Vec3(0,0,-1)); // estandarizo como que todos los objetos vanilla empiezan mirando hacia z=-1, como la camara
+            Quat ret = *this*p*opuesto();
+            return ret.getV();
         }
+
+
+        static Quat get_rotation_quaternion(Vec3 eje, double a){
+            return Quat(cos(a/2), eje.norm()*sin(a/2));
+        }
+
+
+
 
         static Quat suma(Quat q1, Quat q2){
             return Quat(q1.a + q2.a, q1.b + q2.b, q1.c + q2.c, q1.d + q2.d);

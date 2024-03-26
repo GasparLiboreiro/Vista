@@ -10,9 +10,27 @@ class Box{
         Box(double w=0, double h=0, double d=0, double x=0, double y=0, double z=0):tam(Vec3(w,h,d)), offset(Vec3(x,y,z)) {}
         
         bool inBox(Vec3 pos){
-            return  ((pos.x>=offset.x && pos.x<=offset.x+tam.x) || tam.x==0) && 
-                    ((pos.y>=offset.y && pos.y<=offset.y+tam.y) || tam.y==0) && 
-                    ((pos.z>=offset.z && pos.z<=offset.z+tam.z) || tam.z==0);
+            return  ((pos.x>=offset.x && pos.x<offset.x+tam.x) || tam.x==0) && 
+                    ((pos.y>=offset.y && pos.y<offset.y+tam.y) || tam.y==0) && 
+                    ((pos.z>=offset.z && pos.z<offset.z+tam.z) || tam.z==0);
+        }
+
+        Vec3 punto2DMasCercano(Vec3 pos){
+            if(inBox(pos)){
+                return pos;
+            } else {
+                if(pos.x<offset.x){
+                    pos.x=offset.x;
+                } else if(pos.x>=offset.x + tam.x){
+                    pos.x=offset.x + tam.x - 1;
+                }
+                if(pos.y<offset.y){
+                    pos.y=offset.y;
+                } else if(pos.y>=offset.y + tam.y){
+                    pos.y=offset.y + tam.y - 1;
+                }
+                return pos;
+            }
         }
 
 };

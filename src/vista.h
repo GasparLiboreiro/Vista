@@ -31,6 +31,7 @@ class Vista{
         {
             load_face();
             escena.emplace_back(Entity::getCubo(0.1, Vec3(0,0,0)));
+            //escena.emplace_back(Entity(Mesh({Vec3(0,0,0), Vec3(1,2), Vec3(1,-2)}, {Tri(0,1,2)})));
         }
 
 

@@ -33,7 +33,7 @@ class Tri{
         int a=0, b=0, c=0;
         Vec3 o;
         Vec3 t1, t2;
-        Color textura[64][64]; //<0> aparece deformado cuando se muestra, me frustro
+        Color textura[64][64];
         Box texturaBox = Box(64,64);
 
 
@@ -54,9 +54,9 @@ class Tri{
                     textura[i+j][i]=Color(0,25*i,0);
                     textura[i][i+j]=Color(0,0,25*i);
                 }
-            for(int i=0; i<10; i++)
+            for(int i=0; i<15; i++)
                 textura[i][0]=Color(0,0,0);
-            for(int i=0; i<10; i++)
+            for(int i=0; i<15; i++)
                 textura[0][i]=Color(0,0,0);
         }
 
@@ -74,6 +74,15 @@ class Tri{
 
         Color getColorFromCoords(Vec3 coords){
             Vec3 p = (t1*coords.x + t2*coords.y) + o;
+            if(texturaBox.inBox( p._toInt() )){
+                return textura[(int)p.x][(int)p.y];
+            } else {
+                return Color();
+            }
+        }
+        
+        Color getColorFromBarycentricCoords(Vec3 coords){
+            Vec3 p = o*coords.x + (o+t1)*coords.y + (o+t2)*coords.z;
             if(texturaBox.inBox( p._toInt() )){
                 return textura[(int)p.x][(int)p.y];
             } else {

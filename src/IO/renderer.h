@@ -9,6 +9,176 @@
 #include "../modelo/box.h"
 
 
+class edgeTracker {
+    public:
+
+        Vec3 a, b;
+
+        // coords del punto actual del borde
+        double x, y, z;
+        // cantidad que cambia x por cada 1 de y
+        double x_vinc;
+        // cantidad que cambia z por cada 1 de y
+        double z_vinc;
+
+        //para comodidad, cualquier edgeTracker que sea inicializado solo asi no anda
+        edgeTracker(){}
+
+        // se deben brindar en orden de y creciente
+        edgeTracker(Vec3 a, Vec3 b){
+            //Vec3 normal = (b-a).mult_vectorial(c-a);
+            //z_hinc = -normal.x/normal.z;                  <!0>
+
+            if(a.y<b.y){
+                Vec3 bub = a;
+                a = b;
+                b = bub;
+
+                std::cout<<"WARN IO/renderer/edgeTracker(): deberia ingresar vectores a y b en orden de Y decreciente"<<std::endl;
+            }
+
+            this->a = a;
+            this->b = b;
+
+            x_vinc = (a.x - b.x) / (a.y - b.y);
+            z_vinc = (a.z - b.z) / (a.y - b.y);
+
+            x = a.x;
+            y = a.y;
+            z = a.z;
+
+            if(y!=floor(y)) // si y no esta en una posicion entera
+            {
+                x-=x_vinc*(y-floor(y));
+                z-=z_vinc*(y-floor(y)); // x/z_vinc representa cuanto cambia cada 1 de y, como aca nos movemos menos que 1, multiplico por lo que nos movemos
+                y=floor(y);
+            }
+        }
+
+        //hace avanzar las coords actuales al siguiente scanline/renglon del edge/borde
+        void next(){
+            y--;
+            x-=x_vinc;
+            z-=z_vinc;
+        }
+
+        /**me debuelve la posicion desde la que empezar a iterar horizontalmente 
+         * lo que pasa aca es que muevo x a un valor entero, en ese movimiento, pensando en el supuesto triangulo como un plano 3d, cambia z, por eso el parametro
+         * @param z_hinc es la cantidad que cambia z por cada valor de x
+        */
+        Vec3 getPosIterHorizontal(double z_hinc){
+            Vec3 pos(
+                floor(x),
+                y,
+                z-z_hinc*(x-(floor(x)))
+            );
+
+            return pos;
+        }
+};
+
+
+class triTracker {
+    public:
+        // vertices del triangulo (en orden de y decreciente)
+        Vec3 t1, t2, t3;
+        Vec3 normal;
+
+        // coords del punto actual
+        Vec3 p;
+
+        // edge tracker izquierdo y derecho
+        edgeTracker ei, ed;
+        
+        // cantidad que cambia z por cada 1 de x
+        double z_hinc;
+
+        triTracker(Vec3 a, Vec3 b, Vec3 c){
+            
+            // consigo cuanto cambia z por cada valor de x
+            normal = (b-a).mult_vectorial(c-a);
+            z_hinc = -normal.x/normal.z; // tengo que contemplar que si normal.z==0 no se haga nada con el triangulo
+            //std::cout<<"n.z: "<<normal.z<<std::endl;
+
+            // ordeno los vectores con Y creciente
+            Vec3 bubb;
+            if(a.y<b.y){
+                bubb=a;
+                a=b;
+                b=bubb;
+            }
+            if(a.y<c.y){
+                bubb=a;
+                a=c;
+                c=bubb;
+            }
+            if(b.y<c.y){
+                bubb=b;
+                b=c;
+                c=bubb;
+            }
+
+            t1 = a;
+            t2 = b;
+            t3 = c;
+            
+            Vec3 a_c = c-a;
+            Vec3 a_b = b-a;
+
+            // comparo que esta mas a la izquierda, el punto de la linea a->c a la altura del final de a_b.y o el punto final de la recta a->b, esto lo pregunto para tener un edge a la izquierda y otro a la derecha
+            if( ( ( a_c/a_c.y ) * a_b.y ).x < a_b.x ){
+                ei = edgeTracker(a,c);
+                ed = edgeTracker(a,b);
+            } else {
+                ei = edgeTracker(a,b);
+                ed = edgeTracker(a,c);
+            }
+
+            p = ei.getPosIterHorizontal(z_hinc);
+
+        }
+
+
+
+        void next(){
+            //siguiente pos horizontal
+            p.x++;
+            p.z+=z_hinc;
+            
+            
+            // sig renglon?
+            if(p.x>ed.x){
+                ei.next();
+                ed.next();
+                
+                p = ei.getPosIterHorizontal(z_hinc);
+            }
+            // cambio de borde?
+            if( p.y<=t2.y   && ei.a!=t2 && ed.a!=t2){
+                
+                if(ei.b == t2){
+                    ei = edgeTracker(t2, t3);
+                } else {
+                    ed = edgeTracker(t2, t3);
+                }
+
+                p = ei.getPosIterHorizontal(z_hinc);
+            }
+        }
+
+        bool fin(){
+            if(p.y > floor(t3.y) && normal.z>0.005){
+                return false;
+            } else {
+                return true;
+            }  
+        }
+
+        
+};
+
+
+
 
 unsigned const int ANCHO = 1000;
 unsigned const int ALTO = 1000;
@@ -64,7 +234,7 @@ class Renderer{
             std::vector<Vec3> vertices_image_space = std::vector<Vec3>();
             std::vector<Tri> tris_image_space = getTrisEscena(escena);
 
-            Matriz cam_pov_transform = cam.getTransformacion().inversa(); // es la transformacion que mueve la camara a 0,0,0 apuntando hacia -z y de la misma forma a cualquier otro punto
+            Matriz cam_pov_transform = cam.getTransformacionInversa(); // es la transformacion que mueve la camara a 0,0,0 apuntando hacia -z y de la misma forma a cualquier otro punto
 
             for(int i=0; i<escena->size(); i++)
             {
@@ -77,22 +247,24 @@ class Renderer{
                     Matriz v_rs_actual = e_actal->getTransformation() * Matriz::vec3_a_columna( v_actual ); // vector en real space
                     Matriz v_cs_actual = cam_pov_transform * v_rs_actual;                                   // vector en camera space (lo consigo de una y por separado para hacer un if si se tiene que clipear)
 
-                    if(v_cs_actual[0][2]<=-cam.np && v_cs_actual[0][2]>=-cam.fp)
+                    Matriz image_space_col = cam.getViewTransform() * v_cs_actual; // vector en image space
+                    image_space_col[0][0]/=image_space_col[0][3];
+                    image_space_col[0][1]/=image_space_col[0][3];
+                    image_space_col[0][2]/=image_space_col[0][3];
+                    Vec3 image_space = Matriz::columna_a_vec3(image_space_col);
+
+                    
+                    
+
+                    if(image_space.z>1 || image_space.z<-1)
                     {
-                        Matriz image_space_col = cam.getViewTransform() * v_cs_actual; // vector en image space
-                        image_space_col[0][0]/=image_space_col[0][3];
-                        image_space_col[0][1]/=image_space_col[0][3];
-                        image_space_col[0][2]/=image_space_col[0][3];
-                        Vec3 image_space = Matriz::columna_a_vec3(image_space_col);
-                        
+                        image_space.nulo=true;
                         vertices_image_space.push_back(image_space);
                     } 
-                    else 
+                    else
                     {
-                    //std::cout<<"z: "<<actual[0][2]<<std::endl;
-                        Vec3 out;
-                        out.nulo=true;
-                        vertices_image_space.push_back(out);
+                        image_space.z = v_cs_actual[0][3]; // las z estan distorcionadas de formas re iregulares, con esto consigo la distancia a la camara enm el espacio real, imporntante para despues (texturas)
+                        vertices_image_space.push_back(image_space);
                     }
 
                 }
@@ -105,9 +277,9 @@ class Renderer{
                 Vec3 c_i = vertices_image_space[tris_image_space[i].c];
                 
                 if(!a_i.nulo && !b_i.nulo && !c_i.nulo){
-                    Vec3 a = unitsToPixs(a_i);
-                    Vec3 b = unitsToPixs(b_i);
-                    Vec3 c = unitsToPixs(c_i);
+                    Vec3 a = unitsToPixs(a_i).setZ(a_i.z);
+                    Vec3 b = unitsToPixs(b_i).setZ(b_i.z);
+                    Vec3 c = unitsToPixs(c_i).setZ(c_i.z);
                     //SDL_SetRenderDrawColor(canvas, rand()%255, rand()%255, rand()%255, 255);
 
                     renderTri(tris_image_space[i],a,b,c,z_buffer);
@@ -124,143 +296,75 @@ class Renderer{
             SDL_RenderPresent(canvas);
         }
 
-        void renderTri(Tri t, Vec3 a, Vec3 b, Vec3 c, double** z_buffer)
+        void renderTri(Tri tri, Vec3 a, Vec3 b, Vec3 c, double** z_buffer)
         {
-            // hay un triangulo en la textura que representa el triangulo que esta en el espacio, y sirve para determinar que colores van en cada pixel, at bt ct son las vertices de este triangulo
-            Vec3 at = t.o;
-            Vec3 bt = t.t1 + t.o; 
-            Vec3 ct = t.t2 + t.o;
 
+            // chequear mi hoja del dia 18/3/24 respecto a Berrycentric Coordinates
 
-            //quiero tener a b c ordenados de menor a mayor en relacion a Y
-            Vec3 bubb;
-            if(a.y>b.y){
-                bubb=a;
-                a=b;
-                b=bubb;
+            Vec3 o = a;
+            Vec3 e1 = b-o; 
+            Vec3 e2 = c-o;
 
-                bubb=at;
-                at=bt;
-                bt=bubb;
-            }
-            if(a.y>c.y){
-                bubb=a;
-                a=c;
-                c=bubb;
-                
-                bubb=at;
-                at=ct;
-                ct=bubb;
-            }
-            if(b.y>c.y){
-                bubb=b;
-                b=c;
-                c=bubb;
-                
-                bubb=bt;
-                bt=ct;
-                ct=bubb;
-            }
+            double divisor = 1 / ((e2*e2)*(e1*e1) - (e1*e2)*(e1*e2));
+            Vec3 mb = (e1*(e2*e2) - e2*(e1*e2)) * divisor; // mu beta
+            Vec3 mg = (e2*(e1*e1) - e1*(e1*e2)) * divisor; // mu gamma
 
-            //tengo a b c ordenados de menor a mayor Y
-            /*
-              ahora, sucederia que el lado a-c es siempre el limite de las lineas horizontales
-              y los lados a-b y b-c son los que cambian a mitad de camino
-            */
-            double ac_h = c.y-a.y;
-            double ab_h = b.y-a.y;
-            double bc_h = c.y-b.y;
-            double tac_h = ct.y-at.y;
-            double tab_h = bt.y-at.y;
-            double tbc_h = ct.y-bt.y;
+            // parte de la correccion por la perspectiva para las texturas (https://www.youtube.com/watch?v=VdLZCyHNdHc)
             
+            Vec3 tri_a_div = tri.o/a.z; 
+            tri_a_div.z=1./a.z;
+            Vec3 tri_b_div = (tri.t1+tri.o)/b.z; 
+            tri_b_div.z=1./b.z;
+            Vec3 tri_c_div = (tri.t2+tri.o)/c.z; 
+            tri_c_div.z=1./c.z;
 
-            for(int j=0; j<ab_h; j++)// primera mitad del triangulo, a-c / a-b
-            {
-                Vec3 p1 = a.lerp(c, j/ac_h);
-                Vec3 p2 = a.lerp(b, j/ab_h);
-                if(screen.inBox(p1)||screen.inBox(p2))
-                {
-                    Vec3 tp1 = at.lerp(ct, j/ac_h);// hago la misma interpolacion que con lo que renderizo pero para los puntos en la textura
-                    Vec3 tp2 = at.lerp(bt, j/ab_h);
-                    
-                    rasterizarLinea(p1, p2, tp1, tp2, t.textura, z_buffer);
-                }
-            }
-            for(int j=0; j<bc_h; j++)// primera mitad del triangulo, a-c / a-b
-            {
-                Vec3 p1 = a.lerp(c, (j+ab_h)/ac_h);
-                Vec3 p2 = b.lerp(c, j/bc_h);
-                if(screen.inBox(p1)||screen.inBox(p2))
-                {
-                    Vec3 tp1 = at.lerp(ct, (j+ab_h)/ac_h);// hago la misma interpolacion que con lo que renderizo pero para los puntos en la textura
-                    Vec3 tp2 = bt.lerp(ct, j/bc_h);
-                    
-                    rasterizarLinea(p1, p2, tp1, tp2, t.textura, z_buffer);
-                }
-            }
-            
+            double alfa, beta, gamma;
 
-        }
 
-        /** Esta funcion renderiza una sola linea de un poligono, se asume que v1.y y v2.y son iguales
-         * @param v1 coords en pixeles del inicio de la interpolacion
-         * @param v2 coords en pixeles del fin de la interpolacion
-         * @param tp1 coords en la textura del primer punto en interpolacion
-         * @param tp2 coords en la textura del ultimo punto en interpolacion
-         * @param textura array de colores conteniendo la textura
-         * @param z_buffer array de profundidades de los pixeles, si el que se esta dibujando esta mas lejos que uno ya cargado, no se dibuja
-         */
-        void rasterizarLinea(Vec3 v1, Vec3 v2, Vec3 tp1, Vec3 tp2, Color textura[64][64], double** z_buffer)
-        {
-            if(v1.x>v2.x){
-                Vec3 bubb=v1;
-                v1=v2;
-                v2=bubb;
+            triTracker t_tracker (a,b,c);
+            while (!t_tracker.fin()){
+                //std::cout<<"t.p: "<<t_tracker.p.to_string()<<std::endl;
+                if(screen.inBox(t_tracker.p) && t_tracker.p.z > z_buffer[(int) t_tracker.p.x][(int) t_tracker.p.y]){
+                    //std::cout<<"entra??"<<std::endl;
+                    z_buffer[(int) t_tracker.p.x][(int) t_tracker.p.y] = t_tracker.p.z;
 
-                bubb=tp1;
-                tp1=tp2;
-                tp2=bubb;
-            }/*
-            v1.z = 2.0/ANCHO*v1.z-1; //tienen z en pixeles, un quilombo
-            v2.z = 2.0/ANCHO*v2.z-1; //aca lo paso a image space de nuevo*/
-            
-            double dx = v2.x-v1.x; // distancia en x a atravesar, delta x
+                    beta = mb * (t_tracker.p - o);
+                    gamma = mg * (t_tracker.p - o);
+                    alfa = 1 - beta - gamma;
+                    Vec3 tri_p_div = tri_a_div * alfa + tri_b_div * beta + tri_c_div * gamma;
+                    Vec3 p = tri_p_div * (1./tri_p_div.z);
 
-            Vec3 p; // pixel en el que estoy parado
-            Vec3 tp; // punto de la textra en el que estoy parado
-            for(int i=0; i<=dx; i++)
-            {
-                p = v1.lerp(v2, i/dx);
-                //std::cout<<"tp1: "<<tp1.to_string()<<" tp2: "<<tp2.to_string()<<std::endl;
-                tp = tp1.lerp(tp2, i/dx);
-                if(screen.inBox(p) && p.z > z_buffer[(int)p.x][(int)p.y])
-                {
-                    z_buffer[(int)p.x][(int)p.y] = p.z;
-                    //SDL_SetRenderDrawColor(canvas, ((p.z+1)/2)*255,((p.z+1)/2)*255,((p.z+1)/2)*255,255); // intento fog, flashero
-                    if(Box(64,64).inBox(tp.toInt())){
-                        Color color = textura[(int)tp.x][(int)tp.y];
-                        SDL_SetRenderDrawColor(canvas, color.r, color.g, color.b, 255);
+                    /*
+                    Vec3 coords = Vec3::coordsEnBase2D(e1,e2, t_tracker.p-o);
+                    Vec3 tri_p_div = (tri_t1_div * coords.x + tri_t2_div * coords.y) + tri_o_div;
+                    Vec3 p = tri_p_div*(1/tri_p_div.z);*/
+
+                    Vec3 pt = tri.texturaBox.punto2DMasCercano(p); // si p se sale de la textura, usamos el color mas cercano
+                    if(tri.texturaBox.inBox(pt)){
+                        Color c = tri.textura[(int)pt.x][(int)pt.y];
+                        SDL_SetRenderDrawColor(canvas, c.r, c.g, c.b, 255);
                     } else {
-                        SDL_SetRenderDrawColor(canvas, 255, 255, 255, 255);
+                        SDL_SetRenderDrawColor(canvas, 255, 0, 0, 255);
                     }
-                    
-                    SDL_RenderDrawPoint(canvas, (int)p.x, (int)p.y);
+
+                    SDL_RenderDrawPoint(canvas, t_tracker.p.x, ALTO-1- t_tracker.p.y);
                 }
+
+                t_tracker.next();
             }
+            
+
         }
-
-
 
 
         static Vec3 unitsToPixs(Vec3 units)
         {
-            return Vec3((units.x+1) * ANCHO/2, (-units.y+1) * ANCHO/2, (units.z+1) * ANCHO/2);
+            return Vec3((units.x+1) * ANCHO/2, (units.y+1) * ANCHO/2, (units.z+1) * ANCHO/2);
         }
 
         static Vec3 pixsToUnits(Vec3 pixs)
         {
-            return Vec3(2.0/ANCHO*pixs.x-1, -(2.0/ANCHO*pixs.y-1), 2.0/ANCHO*pixs.z-1);
+            return Vec3(2.0/ANCHO*pixs.x-1, 2.0/ANCHO*pixs.y-1, 2.0/ANCHO*pixs.z-1);
         }
 
 

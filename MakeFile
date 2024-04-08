@@ -1,2 +1,2 @@
 all:
-	g++ -IC:\Users\gaspa\OneDrive\Documents\todo\Programacion\c++\nuevo_B)\librerias\SDL2+Image\include -LC:\Users\gaspa\OneDrive\Documents\todo\Programacion\c++\nuevo_B)\librerias\SDL2+Image\lib -o run src/*.cpp -lgomp -lmingw32 -lSDL2main -lSDL2 -lSDL2_image
+	g++ -I.\libs\SDL2+Image\include -L.\libs\SDL2+Image\lib -o run src/*.cpp -lgomp -lmingw32 -lSDL2main -lSDL2 -lSDL2_image

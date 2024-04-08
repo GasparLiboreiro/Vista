@@ -8,7 +8,7 @@
 const int NORMAL = 0;
 const int DRAGGING = 1;
 
-const double t_click = 0.2;
+const double t_click = 0.13;
 double press_time = 0; 
 
 int btn_izq_state = NORMAL;
@@ -87,12 +87,27 @@ void manage_events(Vista* vista){
                 {
                     if(e.button.button == SDL_BUTTON_LEFT) // click izquierdo
                     {
-                        vista->cam.vangular=Quat();
-                        vista->cam._girar(Vec3(0,0,1), 0.2);
+                        if(UIManager::getInstance()->posTocaUI(Vec3(e.button.x, e.button.y)))
+                        { // click a la ui!
+                            UIManager::getInstance()->manageClickInteraction(e.button);
+                        } 
+                        else
+                        { // click al render
+                            vista->cam.vangular=Quat();
+                            //vista->cam._girar(Vec3(0,0,1), 0.2);
+                        }
+                        
                     }
                     if(e.button.button == SDL_BUTTON_RIGHT) // click derecho
                     {
+                        if(UIManager::getInstance()->posTocaUI(Vec3(e.button.x, e.button.y)))
+                        { // click a la ui!
+                            UIManager::getInstance()->manageClickInteraction(e.button);
+                        } 
+                        else
+                        { // click al render
 
+                        }
                     }
                 }
                 break;
@@ -102,54 +117,73 @@ void manage_events(Vista* vista){
                 {
                     if(btn_izq_state == DRAGGING) // dragging btn izquierdo 
                     {
-                        double radio = vista->cam.dist*3/4;
+                        if(UIManager::getInstance()->posTocaUI(Vec3(e.motion.x - e.motion.xrel, e.motion.y - e.motion.yrel)))
+                        {
+                            UIManager::getInstance()->manageDragInteraction(e.motion);
+                        }
+                        else
+                        {
+                            double radio = 3;//vista->cam.dist*3/4;
 
-                        Vec3 pixs1 = Vec3(e.motion.x-e.motion.xrel, e.motion.y-e.motion.yrel);
-                        Vec3 pixs2 = Vec3(e.motion.x              , e.motion.y              );
+                            Vec3 pixs1 = Vec3(e.motion.x-e.motion.xrel, e.motion.y-e.motion.yrel);
+                            Vec3 pixs2 = Vec3(e.motion.x              , e.motion.y              );
 
-                        Vec3 r1 = getPuntoEnTrackball(vista->cam, pixs1, radio).norm(); // punto que toca la esfera en la direccion 1
-                        Vec3 r2 = getPuntoEnTrackball(vista->cam, pixs2, radio).norm(); // punto que toca la esfera en la direccion 2
-                        Vec3 eje = r1.mult_vectorial(r2);                               // eje de rotacion perpendicular a los dos puntos
-                        double angulo = acos(r1*r2);
-                        //vista->cam.vangular = Quat(cos(-angulo*2), eje.norm()*sin(-angulo*2));
-                        vista->cam._girar(eje, -angulo*2);
+                            Vec3 r1 = getPuntoEnTrackball(vista->cam, pixs1, radio).norm(); // punto que toca la esfera en la direccion 1
+                            Vec3 r2 = getPuntoEnTrackball(vista->cam, pixs2, radio).norm(); // punto que toca la esfera en la direccion 2
+                            Vec3 eje = r1.mult_vectorial(r2);                               // eje de rotacion perpendicular a los dos puntos
+                            double angulo = acos(r1*r2);
+                            //vista->cam.vangular = Quat(cos(-angulo*2), eje.norm()*sin(-angulo*2));
+                            vista->cam._girar(eje, -angulo*2);
+                        }
                     }
 
                     if(btn_der_state == DRAGGING) // dragging btn derecho 
                     { 
-                        
+                        // ',:| como hago con la ui?
                     }
                 }
                 break;
 
             case SDL_MOUSEWHEEL:
-                vista->cam.dist-=e.wheel.preciseY/10;
+                if(UIManager::getInstance()->posTocaUI(Vec3(e.wheel.mouseX, e.wheel.mouseY)))
+                {
+                    UIManager::getInstance()->manageScrollWheelInteraction(e.wheel);
+                }
+                else
+                {
+                    vista->cam.dist-=e.wheel.preciseY/10;
+                }
                 break;
             
             case SDL_KEYDOWN:
                 switch (e.key.keysym.sym)
                 {
-                case SDLK_w:
-                    vista->cam.pos.z-=1;
-                    break;
-                case SDLK_a:
-                    vista->cam.pos.x-=1;
-                    break;
-                case SDLK_s:
-                    vista->cam.pos.z+=1;
-                    break;
-                case SDLK_d:
-                    vista->cam.pos.x+=1;
-                    break;
-                case SDLK_LCTRL:
-                    vista->cam.pos.y-=1;
-                    break;
-                case SDLK_SPACE:
-                    vista->cam.pos.y+=1;
-                    break;
-                
-                default:
-                    break;
+                    case SDLK_w:
+                        if(UIManager::getInstance()->te!=nullptr){
+                            delete UIManager::getInstance()->te;
+                            UIManager::getInstance()->te = nullptr;
+                        }
+                        else
+                            UIManager::getInstance()->te = new UIManager::TextureEditor();
+                        break;
+                    case SDLK_a:
+                        
+                        break;
+                    case SDLK_s:
+                        
+                        break;
+                    case SDLK_d:
+                        
+                        break;
+                    case SDLK_LCTRL:
+                        
+                        break;
+                    case SDLK_SPACE:
+                        
+                        break;
+                    
+                    default:
+                        break;
                 }
                 break;
             

@@ -10,7 +10,7 @@ class GameLoop{
     private:
         std::function<void()> paint;
         std::function<void(double)> update;
-        double ups_ideal = 60;
+        double ups_ideal = 30;
         bool looping = false;
 
         std::thread loopingthread;
@@ -18,6 +18,7 @@ class GameLoop{
         void loop(){
             int fes = 0; // frames en el segundo
             int ues = 0; // updates en el segundo
+            int ces = 0; // correciones por frame lento en el segundo
             
             double ud_ideal = 1/ups_ideal; //update delay ideal
 
@@ -43,11 +44,9 @@ class GameLoop{
                     std::this_thread::sleep_for(std::chrono::duration<double>(espera));
                     //std::cout<<"delay de "<<espera<<"segundos"<<std::endl;
                 }
-                if(espera < 0 && ues < ups_ideal)
-                    std::cout<<std::endl;
                 while(espera < 0 && ues < ups_ideal){// si el sleep time es negativo compensamos creando updates dentro del mismo frame, hasta que sleep time sea positivo o que se abastescan las updates del segundo
                     //update
-                    std::cout<<"l";
+                    ces++;
                     update(omp_get_wtime() - ult_update);
                     ult_update = omp_get_wtime();
                     ues++;
@@ -58,10 +57,13 @@ class GameLoop{
                 if(elapsedTime >= 1){
                     fps = fes/elapsedTime;
                     ups = ues/elapsedTime;
+                    
+                    inicio_segundo = omp_get_wtime()+0.0;
+                    std::cout<<"fps:"<<fps<<"\nups:"<<ups<<"\ncon "<<ces<<" correcciones"<<std::endl;
+
                     fes = 0;
                     ues = 0;
-                    inicio_segundo = omp_get_wtime()+0.0;
-                    //std::cout<<"\nfps:"<<fps<<"\nups"<<ups<<std::endl<<std::endl;
+                    ces = 0;
                 }
             }
         }

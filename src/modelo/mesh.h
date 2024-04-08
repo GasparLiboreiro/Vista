@@ -8,9 +8,10 @@
 
 class Color{
     public:
-        unsigned int r, g, b;
 
-        Color(unsigned int _r=255, unsigned int _g=255, unsigned int _b=255):r(_r),g(_g),b(_b){
+        unsigned int r, g, b, a;
+
+        Color(unsigned int _r=255, unsigned int _g=255, unsigned int _b=255, unsigned int _a=255):r(_r),g(_g),b(_b),a(_a){
         }
 
         // color aleatorio
@@ -37,7 +38,7 @@ class Tri{
         Box texturaBox = Box(64,64);
 
 
-        Tri(int _a, int _b, int _c, Vec3 _t1=Vec3(10,0), Vec3 _t2=Vec3(0,10), Vec3 _o=Vec3()):
+        Tri(int _a, int _b, int _c, Vec3 _t1=Vec3(6,0), Vec3 _t2=Vec3(0,6), Vec3 _o=Vec3()):
             a(_a),
             b(_b),
             c(_c),
@@ -46,18 +47,18 @@ class Tri{
             o(_o)
         {
             
-            for(int i=0; i<5; i++)
-                textura[i][i]=Color(25*i,0,0);
-            for(int j=2; j<10; j+=2)
-                for(int i=0; i<5; i++)
-                {
-                    textura[i+j][i]=Color(0,25*i,0);
-                    textura[i][i+j]=Color(0,0,25*i);
+            for(int i=0; i<64; i++){
+                for(int j=0; j<64; j++){
+                    textura[i][j] = Color(255, 0, 220);
                 }
-            for(int i=0; i<15; i++)
-                textura[i][0]=Color(0,0,0);
-            for(int i=0; i<15; i++)
-                textura[0][i]=Color(0,0,0);
+            }
+            for(int i=0; i<64; i++){
+                for(int j=0; j<64; j+=2){
+                    if(j==0 && ((double)i)/2 != i/2)
+                        j++;
+                    textura[j][i] = Color(255*0.0, 255*0.0, 255*0.0);
+                }
+            }
         }
 
         Tri add(int amm){

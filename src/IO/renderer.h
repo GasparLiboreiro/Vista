@@ -26,8 +26,6 @@ class edgeTracker {
 
         // se deben brindar en orden de y creciente
         edgeTracker(Vec3 a, Vec3 b){
-            //Vec3 normal = (b-a).mult_vectorial(c-a);
-            //z_hinc = -normal.x/normal.z;                  <!0>
 
             if(a.y<b.y){
                 Vec3 bub = a;
@@ -97,8 +95,8 @@ class triTracker {
             
             // consigo cuanto cambia z por cada valor de x
             normal = (b-a).mult_vectorial(c-a);
-            z_hinc = -normal.x/normal.z; // tengo que contemplar que si normal.z==0 no se haga nada con el triangulo
-            //std::cout<<"n.z: "<<normal.z<<std::endl;
+            z_hinc = -normal.x/normal.z; // tengo que contemplar que si normal.z==0 no se haga nada con el triangulo, aunque creo que ya lo hago de antes
+            
 
             // ordeno los vectores con Y creciente
             Vec3 bubb;
@@ -182,13 +180,17 @@ class triTracker {
 
 unsigned const int ANCHO = 1000;
 unsigned const int ALTO = 1000;
+
+
+#include "uimanager.h"
+
+
 class Renderer{
-    private:
+    public:
         SDL_Window* window;
         SDL_Renderer* canvas;
         Box screen = Box(ANCHO, ALTO);
         double** z_buffer;
-    public:
 
         Renderer()
         {
@@ -225,47 +227,49 @@ class Renderer{
             
             for(int i=0; i<ANCHO; i++)
                 for(int j=0; j<ALTO; j++)
-                    z_buffer[i][j]=INT_MIN;
+                    if(z_buffer[i][j]!=INT_MIN)
+                        z_buffer[i][j]=INT_MIN;
             
             clear();
-            SDL_SetRenderDrawColor(canvas, 255, 255, 255, 255);
-            //Matriz CT = cam.getCameraTransform();// matriz para pasar de espacio normal a image space desde la perspectiva de la camara
+            
+            Matriz CT = cam.getCameraTransform();// matriz para pasar de espacio normal a image space desde la perspectiva de la camara
             
             std::vector<Vec3> vertices_image_space = std::vector<Vec3>();
+            std::vector<double> z_vertices_image_space = std::vector<double>(); // esto esta re feo, deberia hacer una clase llamada vertice que me permita mover mas data que solo la posicion
             std::vector<Tri> tris_image_space = getTrisEscena(escena);
 
-            Matriz cam_pov_transform = cam.getTransformacionInversa(); // es la transformacion que mueve la camara a 0,0,0 apuntando hacia -z y de la misma forma a cualquier otro punto
 
             for(int i=0; i<escena->size(); i++)
             {
                 Entity* e_actal = &escena->at(i);
-                //Matriz t_final_entidad = CT * escena->at(i).getTransformation(); inutilizada porq uso la tranformacion y la CT por separado
+                Matriz t_final_entidad = CT * escena->at(i).getTransformation();
 
                 for(int j=0; j<e_actal->mesh.vertices.size(); j++)
                 {
+
                     Vec3 v_actual = e_actal->mesh.vertices.at(j);                                           // vector del modelo a transformar
-                    Matriz v_rs_actual = e_actal->getTransformation() * Matriz::vec3_a_columna( v_actual ); // vector en real space
-                    Matriz v_cs_actual = cam_pov_transform * v_rs_actual;                                   // vector en camera space (lo consigo de una y por separado para hacer un if si se tiene que clipear)
 
-                    Matriz image_space_col = cam.getViewTransform() * v_cs_actual; // vector en image space
-                    image_space_col[0][0]/=image_space_col[0][3];
-                    image_space_col[0][1]/=image_space_col[0][3];
-                    image_space_col[0][2]/=image_space_col[0][3];
-                    Vec3 image_space = Matriz::columna_a_vec3(image_space_col);
-
-                    
+                    Matriz image_space_col = t_final_entidad * Matriz::vec3_a_columna(v_actual);            // vector en image space
                     
 
-                    if(image_space.z>1 || image_space.z<-1)
-                    {
+                    if(cam.np<=image_space_col[0][3] && image_space_col[0][3]<=cam.fp){ // la w que retorna la transformacion parametricamente es: w=-z*  donde z* es la z del punto transformado en camera space, osea, es la distancia a la camara (mas bien la distancia a tener z=0)
+                        
+                        image_space_col[0][0]/=image_space_col[0][3];
+                        image_space_col[0][1]/=image_space_col[0][3];
+                        image_space_col[0][2]/=image_space_col[0][3];
+                        
+                        Vec3 image_space = Matriz::columna_a_vec3(image_space_col);
+
+                        vertices_image_space.push_back(image_space);
+                        z_vertices_image_space.push_back(-image_space_col[0][3]);
+
+                    } else {
+                        Vec3 image_space;
                         image_space.nulo=true;
                         vertices_image_space.push_back(image_space);
-                    } 
-                    else
-                    {
-                        image_space.z = v_cs_actual[0][3]; // las z estan distorcionadas de formas re iregulares, con esto consigo la distancia a la camara enm el espacio real, imporntante para despues (texturas)
-                        vertices_image_space.push_back(image_space);
+                        z_vertices_image_space.push_back(0);
                     }
+
 
                 }
             }
@@ -280,9 +284,12 @@ class Renderer{
                     Vec3 a = unitsToPixs(a_i).setZ(a_i.z);
                     Vec3 b = unitsToPixs(b_i).setZ(b_i.z);
                     Vec3 c = unitsToPixs(c_i).setZ(c_i.z);
+                    double a_z = z_vertices_image_space[tris_image_space[i].a];
+                    double b_z = z_vertices_image_space[tris_image_space[i].b];
+                    double c_z = z_vertices_image_space[tris_image_space[i].c];
                     //SDL_SetRenderDrawColor(canvas, rand()%255, rand()%255, rand()%255, 255);
 
-                    renderTri(tris_image_space[i],a,b,c,z_buffer);
+                    renderTri(tris_image_space[i],a,b,c,a_z,b_z,c_z,z_buffer);
                     /*
                     SDL_SetRenderDrawColor(canvas, 255,255,255,255);
                     SDL_RenderDrawLineF(canvas, a.x, a.y, b.x, b.y);
@@ -293,10 +300,16 @@ class Renderer{
                     
                 }
             }
+
+
+            
+            UIManager::getInstance()->paint(canvas);
+
+
             SDL_RenderPresent(canvas);
         }
 
-        void renderTri(Tri tri, Vec3 a, Vec3 b, Vec3 c, double** z_buffer)
+        void renderTri(Tri tri, Vec3 a, Vec3 b, Vec3 c, double a_z, double b_z, double c_z, double** z_buffer)
         {
 
             // chequear mi hoja del dia 18/3/24 respecto a Berrycentric Coordinates
@@ -311,12 +324,12 @@ class Renderer{
 
             // parte de la correccion por la perspectiva para las texturas (https://www.youtube.com/watch?v=VdLZCyHNdHc)
             
-            Vec3 tri_a_div = tri.o/a.z; 
-            tri_a_div.z=1./a.z;
-            Vec3 tri_b_div = (tri.t1+tri.o)/b.z; 
-            tri_b_div.z=1./b.z;
-            Vec3 tri_c_div = (tri.t2+tri.o)/c.z; 
-            tri_c_div.z=1./c.z;
+            Vec3 tri_a_div = tri.o/a_z; 
+            tri_a_div.z=1./a_z;
+            Vec3 tri_b_div = (tri.t1+tri.o)/b_z; 
+            tri_b_div.z=1./b_z;
+            Vec3 tri_c_div = (tri.t2+tri.o)/c_z; 
+            tri_c_div.z=1./c_z;
 
             double alfa, beta, gamma;
 
@@ -328,19 +341,22 @@ class Renderer{
                     //std::cout<<"entra??"<<std::endl;
                     z_buffer[(int) t_tracker.p.x][(int) t_tracker.p.y] = t_tracker.p.z;
 
+                    // consigo las coords barycentricas
                     beta = mb * (t_tracker.p - o);
                     gamma = mg * (t_tracker.p - o);
                     alfa = 1 - beta - gamma;
+
+                    // usando esas coords, encuentro el punto equivalente en las uvs distorcionadas
                     Vec3 tri_p_div = tri_a_div * alfa + tri_b_div * beta + tri_c_div * gamma;
+
+                    // corrijo la distorcion del punto
                     Vec3 p = tri_p_div * (1./tri_p_div.z);
 
-                    /*
-                    Vec3 coords = Vec3::coordsEnBase2D(e1,e2, t_tracker.p-o);
-                    Vec3 tri_p_div = (tri_t1_div * coords.x + tri_t2_div * coords.y) + tri_o_div;
-                    Vec3 p = tri_p_div*(1/tri_p_div.z);*/
+                    // si se escapa de los limites de la textura, se soluciona
+                    Vec3 pt = tri.texturaBox.punto2DMasCercano(p);
 
-                    Vec3 pt = tri.texturaBox.punto2DMasCercano(p); // si p se sale de la textura, usamos el color mas cercano
-                    if(tri.texturaBox.inBox(pt)){
+
+                    if(tri.texturaBox.inBox(pt)){ // no deberia hacer falta el if, lo pongo por si las dudas
                         Color c = tri.textura[(int)pt.x][(int)pt.y];
                         SDL_SetRenderDrawColor(canvas, c.r, c.g, c.b, 255);
                     } else {
@@ -359,12 +375,20 @@ class Renderer{
 
         static Vec3 unitsToPixs(Vec3 units)
         {
-            return Vec3((units.x+1) * ANCHO/2, (units.y+1) * ANCHO/2, (units.z+1) * ANCHO/2);
+            Vec3 pixs = units;
+            pixs.x = (units.x+1) * ANCHO/2;
+            pixs.y = (units.y+1) * ANCHO/2;
+            pixs.z = (units.z+1) * ANCHO/2;
+            return pixs;
         }
 
         static Vec3 pixsToUnits(Vec3 pixs)
         {
-            return Vec3(2.0/ANCHO*pixs.x-1, 2.0/ANCHO*pixs.y-1, 2.0/ANCHO*pixs.z-1);
+            Vec3 units = pixs;
+            units.x = 2.0/ANCHO*pixs.x-1;
+            units.y = 2.0/ANCHO*pixs.y-1;
+            units.z = 2.0/ANCHO*pixs.z-1;
+            return units;
         }
 
 
@@ -390,6 +414,13 @@ class Renderer{
             } else {
                 return false;
             }
+        }
+
+
+
+
+        static void setRenderColor(SDL_Renderer* canvas, Color c){
+            SDL_SetRenderDrawColor(canvas, c.r, c.g, c.b, c.a);
         }
 
 };

@@ -18,4 +18,7 @@ Detalle, inclui SDL2 entero al proyecto y me piso los lenguajes
 
 Actualmente el proyecto esta en pausa por estar trabajando en otros proyectos (hyper_stats), pero estos objetivos son los siguientes pasos
 
-![8)_simple](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/captura_8\)_rayas.png)
+![8)_simple](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/8\)_simple.gif)
+![8)_rayas](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/8\)_rayas.gif)
+![8)_trackball](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/8\)_trackball.gif)
+![texturas](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/texturas.gif)

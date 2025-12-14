@@ -18,6 +18,14 @@ Detalle, inclui SDL2 entero al proyecto y me piso los lenguajes
 
 Actualmente el proyecto esta en pausa por estar trabajando en otros proyectos (hyper_stats), pero estos objetivos son los siguientes pasos
 
+## UPDATE
+No creo que vuelva a este proyecto
+Recientemente aprendi a programar usando OpenGL en c, y esta aventura de armar mi propio renderer fue divertida y un enorme aprendizaje, pero llego a su fin
+Llegue re lejos igual, estoy bastante orgulloso con todo lo que aprendi, y que haya llegado a hacer texturas y todo
+
+Pero ahora arranca una nueva hera, en la que el renderizado es automatico y eficiente, y el techo de lo que puedo alcanzar esta mas alto aún
+Me emociona lo que voy a poder hacer con OpenGL, gracias por todo mis renderers :)
+
 ![8)_simple](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/8\)_simple.gif)
 ![8)_rayas](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/8\)_rayas.gif)
 ![8)_trackball](https://github.com/GasparLiboreiro/Vista/blob/main/imgs/8\)_trackball.gif)
